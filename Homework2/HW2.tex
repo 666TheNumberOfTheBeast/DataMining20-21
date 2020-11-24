@@ -1,0 +1,185 @@
+\documentclass[11pt]{article}
+
+\usepackage{geometry}
+\geometry{
+ a4paper,
+ textwidth = 500pt
+}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\graphicspath{ {./Problem3/images/} }
+
+
+\begin{document}
+
+\title{Homework 2 - Data Mining - Sapienza}
+\author{Ivan Fardin 1747864}
+\date{November 22$^{th}$, 2020}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+\section{Problem 1}
+To download some products from \url{https://www.amazon.it/} I used the suggested \textbf{Requests} and \textbf{Beautiful Soup} packages.
+The first one performs a get request to \url{https://www.amazon.it/s?k=KEYWORD&page=X} where KEYWORD is the product we want to look for and X is the page number while the latter parses the retrieved page.
+
+\bigskip
+The \textit{downloadProducts.py} program performs several requests using \textit{computer} as keyword and
+an incremental page number for all available pages.
+Each page is then parsed to extract information of interest (product description, price, prime product or not, product URL and
+ product rank) and these are written into the \textit{products.tsv} file.
+
+\bigskip
+To avoid being blocked, the program performs requests using different user agents and adding a delay between different downloads
+of Amazon pages. \\
+When a sufficient number of pages have been parsed, the user can close the application via Ctrl+C.
+
+\bigskip
+After that, the \textit{invertedIndex.py} program preprocesses each product description stored in the \textit{products.tsv} file
+to build and store an inverted index into the \textit{invertedIndex.json} file.
+
+\bigskip
+The preprocessing part is implemented in the \textit{PreprocessProducts} class in \textit{preprocessProducts.py} and essentially
+tokenizes each product description in two phases: the first uses the \textit{nltk word\_tokenizer} and the second performs an
+additional custom tokenization. \\
+Each resulting token is then normalized and filtered by a stopwords removal phase. \\
+Finally, each token is stemmed and is stored in the inverted index map as key with value a map where each entry is the product
+description number (line in the \textit{products.tsv} file) with value the number of occurrences in the product description.
+
+\bigskip
+In the end, the \textit{queryProducts.py} application performs the query-processing part that consists of preprocessing the
+input query (like each product description above), finding the resulting tokens in the inverted index and for each token
+finding the document having the minimum number (line in the \textit{products.tsv} file) and computing the cosine similarity
+between the query and tokens present in the document having the minimum number.
+The document having the maximum cosine similarity is then printed.
+
+\newpage
+{
+\centering
+\includegraphics[width=\textwidth]{../../Problem1/queryImages/query1}
+
+\bigskip
+\includegraphics[width=\textwidth]{../../Problem1/queryImages/query2}
+
+\bigskip
+\includegraphics[width=\textwidth]{../../Problem1/queryImages/query3}
+
+\bigskip
+\includegraphics[width=\textwidth]{../../Problem1/queryImages/query4}
+}
+
+
+\newpage
+\section{Problem 2}
+Starting from the previously downloaded products in \textbf{Problem 1}, I re-implemented the building of the inverted index
+and the query-processing part using the Spark framework.
+
+\bigskip
+The \textit{invertedIndexSpark.py} program preprocesses each product description stored in the \textit{products.tsv} file
+to build and store an inverted index into the \textit{invertedIndexSpark.json} file.
+
+\bigskip
+This time, the preprocessing part is implemented in the \textit{PreprocessProductsSpark} class in
+\textit{preprocessProductsSpark.py} and simply preprocesses the product description as in \textbf{Problem 1} but returns a list
+of tuples (token, 1) instead of the inverted index. \\
+This because the entire building of the inverted index is achieved using the map-reduce paradigm (each step is fully commented
+in the Python script).
+
+\bigskip
+In the end, the \textit{queryProductsSpark.py} application performs the query-processing part that works similar to
+\textbf{Problem 1} but using the map-reduce paradigm (each step is fully commented in the Python script again).
+
+\bigskip
+{
+\centering
+\includegraphics[width=\textwidth]{../../Problem2/queryImages/query1}
+
+\bigskip
+\includegraphics[width=\textwidth]{../../Problem2/queryImages/query2}
+
+\bigskip
+\includegraphics[width=\textwidth]{../../Problem2/queryImages/query3}
+
+\bigskip
+\includegraphics[width=\textwidth]{../../Problem2/queryImages/query4}
+}
+
+
+\newpage
+\section{Problem 3}
+To perform some forecasting using Covid-19 data, I used the \textbf{spark.ml} package as suggested.
+
+\bigskip
+Initially, I loaded the training data in a Spark DataFrame and selected a few states from it
+(all with the \textit{County} and \textit{Province\_State} columns null). \\
+
+Then, I started the \textbf{feature engineering} process:
+\begin{itemize}
+ \item Transform features of the dataset by indexing the strings of the \textit{Country\_Region}, \textit{Date} and \textit{Target}
+  columns and converting the \textit{Population}, \textit{TargetValue} and \textit{Weight} columns to numbers;
+ \item Extract features from the transformed dataset: \textit{Country\_Region}, \textit{Population}, \textit{Date} and
+  \textit{Target}.
+\end{itemize}
+
+After that, I began to \textbf{cross-validate} different regression algorithms (with label the \textit{TargetValue} column) in order to find the best hyper-parameters among the ones I proposed.
+Clearly linear regression, isotonic regression and factorization machine regression were not suitable for the problem,
+but out of curiosity, I wanted to try.
+
+\bigskip
+Once cross-validation was complete, I found the best model and used it to predict confirmed Covid-19 cases and fatalities using
+(during this phase) the same training set (after the cutting of nations and the feature engineering process) as test set to compute the \textbf{Root Mean Squared Error}.
+
+\bigskip
+In the end, I plotted for each state two charts (one for the confirmed Covid-19 cases and one for the fatalities) using the \textbf{matplotlib} package. These are saved in the \textit{./Problem3/images} directory that must be created before to run the
+application \textit{covid19Forecasting.py}.
+
+\bigskip
+To evaluate each regression model I used the RMSE metric, the predictions values and the resulting plots and the least worst
+results are provided by the regression forest and the gradient-boost tree regression models.
+
+\bigskip
+In my opinion, for having a better accurate prediction, I'd have had to build a deep learning model (Convolutional Neural Network, Recurrent Neural Network, ...) and use the data of previous days to forecast today's data.
+
+\bigskip
+In the following pages, the results charts are shown (one country per page)
+
+\begin{minipage}{\textwidth}
+  \centering
+  \includegraphics{BrazilConfirmedCases} \\
+  \includegraphics{BrazilFatalities}
+\end{minipage}
+
+\begin{minipage}{\textwidth}
+  \centering
+  \includegraphics{GermanyConfirmedCases} \\
+  \includegraphics{GermanyFatalities}
+\end{minipage}
+
+\begin{minipage}{\textwidth}
+  \centering
+  \includegraphics{ItalyConfirmedCases} \\
+  \includegraphics{ItalyFatalities}
+\end{minipage}
+
+\begin{minipage}{\textwidth}
+  \centering
+  \includegraphics{JapanConfirmedCases} \\
+  \includegraphics{JapanFatalities}
+\end{minipage}
+
+\begin{minipage}{\textwidth}
+  \centering
+  \includegraphics{RussiaConfirmedCases} \\
+  \includegraphics{RussiaFatalities}
+\end{minipage}
+
+\begin{minipage}{\textwidth}
+  \centering
+  \includegraphics{SpainConfirmedCases} \\
+  \includegraphics{SpainFatalities}
+\end{minipage}
+
+
+\end{document}

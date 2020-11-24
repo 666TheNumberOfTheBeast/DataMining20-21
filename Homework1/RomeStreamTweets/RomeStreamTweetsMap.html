@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Rome Stream Tweets Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Refresh the page each 10 seconds -->
+    <meta http-equiv="refresh" content="10"/>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <!--<script src="https://maps.googleapis.com/maps/api/js?key=API_KEY&callback=initMap&libraries=&v=weekly" defer></script>-->
+
+    <style type="text/css">
+      /* Always set the map height explicitly to define the size of the div element that contains the map. */
+      #map {
+        height: 100%;
+      }
+
+      /* Makes the map fill the window. */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+
+    <script>
+      let API_KEY, map;
+
+      // Get GMaps api key and load the associated script
+      fetch("./gmaps-config.json")
+        .then(response => response.json())
+        .then(json => loadScript(json));
+
+      function loadScript(json) {
+        API_KEY = json["API key"]
+
+        // Create the script tag, set the appropriate attributes
+        var script = document.createElement("script");
+        script.src = "https://maps.googleapis.com/maps/api/js?key=" + API_KEY + "&callback=initMap";
+        script.defer = true;
+
+        // Append the 'script' element to 'head'
+        document.head.appendChild(script);
+      }
+
+      // Init map and fetch tweets
+      function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 41.902674, lng: 12.496314 },
+          zoom: 12
+        });
+
+        fetch("./tweets.json")
+          .then(response => response.json())
+          .then(json => placeMarkers(json));
+      }
+
+      // Loop through the json and place a marker for each set of coordinates
+      function placeMarkers(json) {
+        for (let i=0; i<json.length; i++) {
+          //console.log(json[i]);
+          item = json[i];
+          const coords = item["coordinates"];
+          const latLng = new google.maps.LatLng(coords[1], coords[0]);
+          new google.maps.Marker({
+            map: map,
+            position: latLng,
+            title: "@" + item["screen_name"] + ":\t" + item["text"] });
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="map"></div>
+  </body>
+
+</html>
